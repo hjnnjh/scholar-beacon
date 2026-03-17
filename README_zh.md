@@ -186,9 +186,20 @@ arxiv_categories = cs.IR, cs.AI, cs.LG, cs.CL
 
 </details>
 
-#### 4. 定时任务
+#### 4. 推送渠道
 
-参考 [`examples/cron-jobs.json`](examples/cron-jobs.json) 中的模板，添加到 `~/.openclaw/cron/jobs.json`（需先停止 Gateway）。
+Scholar Beacon 支持 **Discord** 和 **Telegram** 两种推送渠道。在每个 cron job 的 delivery 字段中配置：
+
+| 渠道 | `delivery.channel` | `delivery.to` |
+|------|-------------------|---------------|
+| Discord | `"discord"` | 频道 ID（右键频道 → 复制频道 ID） |
+| Telegram | `"telegram"` | Chat ID |
+
+如果使用 Discord，需确保目标频道在 `openclaw.json` 的 guild allowlist 中（`channels.discord.guilds.<guild_id>.channels.<channel_id>.allow: true`）。
+
+#### 5. 定时任务
+
+参考 [`examples/cron-jobs.json`](examples/cron-jobs.json) 中的模板，将 `<CHANNEL>` 和 `<TARGET_ID>` 替换为你的推送渠道配置，然后添加到 `~/.openclaw/cron/jobs.json`（需先停止 Gateway）。
 
 ### Agent 一键安装
 

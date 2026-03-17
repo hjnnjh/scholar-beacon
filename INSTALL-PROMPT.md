@@ -51,17 +51,40 @@ https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 uv sync
 
 需要为 literature-helper 和 literature-zotero 两个 skill 都配置 env。
 
-## 7. 配置 Cron Jobs
+## 7. 配置推送渠道
+
+询问用户希望通过哪个渠道接收文献日报推送（Discord 或 Telegram），然后获取以下信息：
+
+### 如果用户选择 Discord：
+- 询问用户要推送到哪个 Discord 频道
+- 获取频道 ID（用户可以在 Discord 中右键频道 → 复制频道 ID）
+- 确认该频道已在 openclaw.json 的 channels.discord.guilds.<guild_id>.channels 中设置 allow: true
+- 如果频道不在 allowlist 中，帮用户添加
+
+### 如果用户选择 Telegram：
+- 询问用户的 Telegram chat ID
+- 确认 openclaw.json 中 channels.telegram.enabled 为 true
+
+记录用户选择的渠道和目标 ID，用于下一步配置 Cron Jobs。
+
+## 8. 配置 Cron Jobs
 
 参考 examples/cron-jobs.json 中的示例，在 ~/.openclaw/cron/jobs.json 中添加三个定时任务。
-注意：需要停止 Gateway 后编辑 jobs.json，编辑完成后重启。
-push-verify 任务中的 push-job-id 需要替换为 daily-push 任务的实际 ID。
 
-## 8. 清理
+注意事项：
+- 需要停止 Gateway 后编辑 jobs.json，编辑完成后重启
+- push-verify 任务中的 push-job-id 需要替换为 daily-push 任务的实际 ID
+- 每个 job 的 delivery 字段需要根据用户在步骤 7 中选择的渠道配置：
+  - Discord: {"mode": "announce"/"silent", "channel": "discord", "to": "<频道ID>"}
+  - Telegram: {"mode": "announce"/"silent", "channel": "telegram", "to": "<chat_id>"}
+- literature-collect 和 literature-push-verify 使用 silent 模式
+- literature-daily-push 使用 announce 模式
+
+## 9. 清理
 
 rm -rf /tmp/scholar-beacon
 
-## 9. 验证
+## 10. 验证
 
 openclaw skills list --eligible | grep literature
 
@@ -74,4 +97,4 @@ openclaw skills list --eligible | grep literature
 
 - If your server is NOT behind a proxy, remove all `https_proxy` / `http_proxy` prefixes.
 - The Zotero integration is optional. Without it, the workflow still collects and pushes papers — just without Zotero library sync.
-- Cron job delivery channel (Telegram/Discord) needs to be configured based on your setup.
+- Supported push channels: **Discord** (recommended) and **Telegram**. The agent will ask you to choose during installation.

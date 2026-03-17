@@ -149,9 +149,20 @@ openalex_filter = concepts.id:C41008148
 arxiv_categories = cs.IR, cs.AI, cs.LG, cs.CL
 ```
 
-#### 4. Cron Jobs
+#### 4. Push Channel
 
-See [`examples/cron-jobs.json`](examples/cron-jobs.json) for cron job templates. Add them to `~/.openclaw/cron/jobs.json` (requires stopping the Gateway first).
+Scholar Beacon supports **Discord** and **Telegram** for daily digest delivery. Configure the delivery target in each cron job:
+
+| Channel | `delivery.channel` | `delivery.to` |
+|---------|-------------------|---------------|
+| Discord | `"discord"` | Channel ID (right-click channel → Copy Channel ID) |
+| Telegram | `"telegram"` | Chat ID |
+
+For Discord, ensure the target channel is in the guild allowlist (`openclaw.json` → `channels.discord.guilds.<guild_id>.channels.<channel_id>.allow: true`).
+
+#### 5. Cron Jobs
+
+See [`examples/cron-jobs.json`](examples/cron-jobs.json) for cron job templates. Replace `<CHANNEL>` and `<TARGET_ID>` with your push channel config, then add them to `~/.openclaw/cron/jobs.json` (requires stopping the Gateway first).
 
 ### Agent Installation
 

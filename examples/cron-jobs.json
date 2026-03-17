@@ -1,12 +1,17 @@
 {
-  "_comment": "Example OpenClaw cron job configuration for Scholar Beacon. Add these to ~/.openclaw/cron/jobs.json",
+  "_comment": "Example OpenClaw cron job configuration for Scholar Beacon.",
+  "_delivery_note": "Replace <CHANNEL> with 'discord' or 'telegram', and <TARGET_ID> with your Discord channel ID or Telegram chat ID.",
   "literature-collect": {
     "schedule": "30 8,20 * * *",
     "tz": "Asia/Shanghai",
     "lightContext": true,
     "thinking": "low",
     "timeoutSeconds": 300,
-    "delivery": "silent",
+    "delivery": {
+      "mode": "silent",
+      "channel": "<CHANNEL>",
+      "to": "<TARGET_ID>"
+    },
     "message": "你是学术文献采集助手。全程使用中文。\n\n执行以下命令完成文献搜索与写入（注意必须先 export PATH）：\n\n  export PATH=$HOME/.local/bin:$PATH\n  cd ~/.openclaw/skills/literature-helper\n  https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 uv run python3 collect-search.py --keywords-file ~/.openclaw/workspace/literature/keywords.md --seen-file ~/.openclaw/workspace/literature/seen-ids.md --limit 20 2>/tmp/lit-search.log | uv run python3 collect-write.py --data-file ~/.openclaw/workspace/literature/data.md --seen-file ~/.openclaw/workspace/literature/seen-ids.md 2>&1\n  cat /tmp/lit-search.log\n\n直接输出脚本结果，不要添加额外内容。"
   },
   "literature-daily-push": {
@@ -15,7 +20,11 @@
     "lightContext": true,
     "thinking": "medium",
     "timeoutSeconds": 600,
-    "delivery": "announce",
+    "delivery": {
+      "mode": "announce",
+      "channel": "<CHANNEL>",
+      "to": "<TARGET_ID>"
+    },
     "message": "你是学术文献日报推送助手。你的输出将直接推送。全程使用中文。\n\n## 步骤一：获取数据\n\n执行以下命令：\n  export PATH=$HOME/.local/bin:$PATH\n  cd ~/.openclaw/skills/literature-helper\n  uv run python3 daily-push-prepare.py --data-file ~/.openclaw/workspace/literature/data.md --pushed-file ~/.openclaw/workspace/literature/seen-pushed-ids.md --pending-file ~/.openclaw/workspace/literature/pending-push-ids.md --max-items 10\n\n## 步骤二：格式化推送\n\n如果脚本输出"今日无新文献需要推送"，直接输出该消息。\n\n否则，将脚本输出的文献列表格式化为简报：\n\n📚 学术文献日报\n\n📅 今日新增 X 篇\n\n对每篇论文：\n📄 **标题**\n👤 作者\n📊 来源 | 年份 | 引用数\n\n简短一句话说明论文主题（根据标题推断）。"
   },
   "literature-push-verify": {
@@ -24,7 +33,11 @@
     "lightContext": true,
     "thinking": "low",
     "timeoutSeconds": 120,
-    "delivery": "silent",
+    "delivery": {
+      "mode": "silent",
+      "channel": "<CHANNEL>",
+      "to": "<TARGET_ID>"
+    },
     "message": "执行以下命令验证文献日报推送状态：\n  export PATH=$HOME/.local/bin:$PATH\n  cd ~/.openclaw/skills/literature-helper\n  uv run python3 daily-push-verify.py --pending-file ~/.openclaw/workspace/literature/pending-push-ids.md --pushed-file ~/.openclaw/workspace/literature/seen-pushed-ids.md --push-job-id <REPLACE_WITH_PUSH_JOB_ID>\n\n直接输出脚本的结果，不要添加任何额外内容。"
   }
 }
