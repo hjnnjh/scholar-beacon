@@ -15,7 +15,7 @@ export PATH=$HOME/.local/bin:$PATH
 ## 2. 下载仓库
 
 cd /tmp
-git clone https://github.com/huangjinnan/scholar-beacon.git
+git clone https://github.com/hjnnjh/scholar-beacon.git
 cd scholar-beacon
 
 ## 3. 部署脚本和 Skills

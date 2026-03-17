@@ -1,5 +1,7 @@
 # Scholar Beacon
 
+**English** | [中文](README_zh.md)
+
 Automated academic literature discovery workflow for [OpenClaw](https://openclaw.ai) — search, collect, curate, and push scholarly papers via AI agent.
 
 ```
@@ -72,7 +74,7 @@ flowchart TB
 
 ```bash
 # Clone
-git clone https://github.com/huangjinnan/scholar-beacon.git
+git clone https://github.com/hjnnjh/scholar-beacon.git
 cd scholar-beacon
 
 # Deploy scripts
