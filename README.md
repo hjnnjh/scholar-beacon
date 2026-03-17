@@ -1,50 +1,54 @@
+<p align="center">
+  <img src="assets/banner.png" alt="Scholar Beacon Banner" width="800">
+</p>
+
 # Scholar Beacon
 
-**English** | [中文](README_zh.md)
+[English](README_en.md) | **中文**
 
-Automated academic literature discovery workflow for [OpenClaw](https://openclaw.ai) — search, collect, curate, and push scholarly papers via AI agent.
+基于 [OpenClaw](https://openclaw.ai) 的学术文献自动发现工作流 — 搜索、采集、筛选、推送，全程由 AI Agent 驱动。
 
 ```
-Cron Trigger → OpenAlex + arXiv Search → Dedup → data.md
-                                                    ↓
-                                          AI Agent formats daily digest
-                                                    ↓
-                                          Push to Discord / Telegram
-                                                    ↓
-                                          User reviews → Approve → Zotero
+定时触发 → OpenAlex + arXiv 搜索 → 去重 → data.md
+                                                ↓
+                                      AI Agent 格式化文献日报
+                                                ↓
+                                      推送到 Discord / Telegram
+                                                ↓
+                                      用户审阅 → 审批入库 → Zotero
 ```
 
-## Features
+## 特性
 
-- **Multi-source search** — OpenAlex (250M+ papers) + arXiv, with configurable discipline filters
-- **Smart dedup** — Local ID tracking + Zotero-aware duplicate detection
-- **Human-in-the-loop Zotero curation** — Papers are collected automatically, but only enter your Zotero library after you approve them via chat
-- **Two-phase push** — Prepare → verify delivery status, preventing lost state on push failures
-- **AI-powered relevance review** — Agent judges paper relevance against your keywords and helps clean irrelevant results
-- **6 companion Skills** — Manage keywords, search scope, Zotero approval, relevance review, and data cleanup through natural language chat
-- **Configurable search scope** — OpenAlex concept filters + arXiv category restrictions, adjustable via chat
+- **多源搜索** — OpenAlex（2.5 亿+ 论文）+ arXiv，可配置学科/类别过滤
+- **智能去重** — 本地 ID 追踪 + Zotero 已有条目检测
+- **人工审批入库** — 自动采集论文，但只有用户在聊天中确认后才写入 Zotero
+- **两阶段推送** — prepare → verify 投递状态，推送失败不丢失状态
+- **AI 相关性审查** — Agent 根据关键词判断论文相关性，辅助清理无关结果
+- **6 个配套 Skill** — 通过自然语言管理关键词、搜索范围、Zotero 审批、相关性审查、数据清理
+- **可配置搜索范围** — OpenAlex 学科过滤 + arXiv 类别限制，通过聊天调整
 
-## Architecture
+## 架构
 
 ```mermaid
 flowchart TB
-    subgraph cron["Cron Jobs"]
+    subgraph cron["定时任务"]
         C1["collect<br/>08:30 / 20:30"]
         C2["daily-push<br/>09:10"]
         C3["push-verify<br/>09:15"]
     end
 
-    subgraph collect["Collection Pipeline"]
+    subgraph collect["采集流程"]
         KW["keywords.md"] --> CS["collect-search.py"]
         SCOPE["scope.conf"] --> CS
         CS --> OA["OpenAlex API"]
         CS --> AX["arXiv API"]
-        CS -->|JSONL pipe| CW["collect-write.py"]
+        CS -->|JSONL 管道| CW["collect-write.py"]
         CW --> DATA["data.md"]
         CW --> SEEN["seen-ids.md"]
     end
 
-    subgraph push["Push Pipeline (Two-Phase Commit)"]
+    subgraph push["推送流程（两阶段提交）"]
         DATA --> PP["daily-push-prepare.py"]
         PP --> PENDING["pending-push-ids.md"]
         PP -->|stdout| AGENT["AI Agent"]
@@ -52,9 +56,9 @@ flowchart TB
         PV["daily-push-verify.py"] -->|delivered| PUSHED["seen-pushed-ids.md"]
     end
 
-    subgraph manual["User Approval via Chat"]
-        USER["User"] -->|"Add papers 1,3 to Zotero"| ZW["zotero-write.py"]
-        ZW -->|dedup + write| ZOTERO[("Zotero")]
+    subgraph manual["用户聊天审批"]
+        USER["用户"] -->|"把第1、3篇加入Zotero"| ZW["zotero-write.py"]
+        ZW -->|去重 + 写入| ZOTERO[("Zotero")]
     end
 
     C1 --> CS
@@ -62,47 +66,47 @@ flowchart TB
     C3 --> PV
 ```
 
-## Quick Start
+## 快速开始
 
-### Prerequisites
+### 前置条件
 
-- [OpenClaw](https://openclaw.ai) Gateway running
-- [uv](https://github.com/astral-sh/uv) (Python package manager)
-- [Zotero API Key](https://www.zotero.org/settings/keys) (optional, for library sync)
+- [OpenClaw](https://openclaw.ai) Gateway 已运行
+- [uv](https://github.com/astral-sh/uv)（Python 包管理器）
+- [Zotero API Key](https://www.zotero.org/settings/keys)（可选，用于文献库同步）
 
-### Installation
+### 安装
 
 ```bash
-# Clone
+# 克隆仓库
 git clone https://github.com/hjnnjh/scholar-beacon.git
 cd scholar-beacon
 
-# Deploy scripts
+# 部署核心脚本
 mkdir -p ~/.openclaw/skills/literature-helper
 cp scripts/*.py scripts/pyproject.toml ~/.openclaw/skills/literature-helper/
 cp skills/literature-helper/SKILL.md ~/.openclaw/skills/literature-helper/
 
-# Deploy companion skills
+# 部署配套 Skills
 for skill in literature-keywords literature-zotero literature-review literature-cleanup literature-scope; do
   mkdir -p ~/.openclaw/skills/$skill
   cp skills/$skill/SKILL.md ~/.openclaw/skills/$skill/
 done
 
-# Create data directory
+# 创建数据目录
 mkdir -p ~/.openclaw/workspace/literature
 cp examples/keywords.md ~/.openclaw/workspace/literature/
 cp examples/scope.conf ~/.openclaw/workspace/literature/
 
-# Install Python dependencies
+# 安装 Python 依赖
 cd ~/.openclaw/skills/literature-helper
 uv sync
 ```
 
-### Configuration
+### 配置
 
-#### 1. Zotero API (optional)
+#### 1. Zotero API（可选）
 
-Add to `~/.openclaw/openclaw.json`:
+在 `~/.openclaw/openclaw.json` 中添加：
 
 ```json5
 {
@@ -111,15 +115,15 @@ Add to `~/.openclaw/openclaw.json`:
       "literature-helper": {
         enabled: true,
         env: {
-          "ZOTERO_API_KEY": "<your-key>",
-          "ZOTERO_LIBRARY_ID": "<your-library-id>"
+          "ZOTERO_API_KEY": "<你的密钥>",
+          "ZOTERO_LIBRARY_ID": "<你的库ID>"
         }
       },
       "literature-zotero": {
         enabled: true,
         env: {
-          "ZOTERO_API_KEY": "<your-key>",
-          "ZOTERO_LIBRARY_ID": "<your-library-id>"
+          "ZOTERO_API_KEY": "<你的密钥>",
+          "ZOTERO_LIBRARY_ID": "<你的库ID>"
         }
       }
     }
@@ -127,62 +131,99 @@ Add to `~/.openclaw/openclaw.json`:
 }
 ```
 
-#### 2. Search Keywords
+> Zotero API Key 从 https://www.zotero.org/settings/keys 获取，同一页面会显示你的 Library ID。
 
-Edit `~/.openclaw/workspace/literature/keywords.md`:
+#### 2. 搜索关键词
+
+编辑 `~/.openclaw/workspace/literature/keywords.md`：
 
 ```
-# One keyword per line, # for comments
+# 每行一个关键词，# 开头为注释
 large language model recommendation
 neural information retrieval
 ```
 
-#### 3. Search Scope
+建议使用英文关键词（OpenAlex 和 arXiv 英文搜索效果最好）。
 
-Edit `~/.openclaw/workspace/literature/scope.conf`:
+#### 3. 搜索范围
+
+编辑 `~/.openclaw/workspace/literature/scope.conf`：
 
 ```
-# OpenAlex discipline filter
+# OpenAlex 学科过滤（留空不限制）
 openalex_filter = concepts.id:C41008148
 
-# arXiv categories (comma-separated)
+# arXiv 类别限制（逗号分隔，留空搜索全站）
 arxiv_categories = cs.IR, cs.AI, cs.LG, cs.CL
 ```
 
-#### 4. Push Channel
+<details>
+<summary>常用 OpenAlex 学科 ID</summary>
 
-Scholar Beacon supports **Discord** and **Telegram** for daily digest delivery. Configure the delivery target in each cron job:
+| 学科 | Concept ID |
+|------|-----------|
+| Computer Science | `C41008148` |
+| Mathematics | `C33923547` |
+| Physics | `C121332964` |
+| Engineering | `C127413603` |
+| Biology | `C86803240` |
+| Medicine | `C71924100` |
+| Economics | `C162324750` |
 
-| Channel | `delivery.channel` | `delivery.to` |
-|---------|-------------------|---------------|
-| Discord | `"discord"` | Channel ID (right-click channel → Copy Channel ID) |
+多学科用 `\|` 分隔：`concepts.id:C41008148\|concepts.id:C33923547`
+
+</details>
+
+<details>
+<summary>常用 arXiv CS 类别</summary>
+
+| 类别 | 说明 |
+|------|------|
+| `cs.IR` | 信息检索 |
+| `cs.AI` | 人工智能 |
+| `cs.LG` | 机器学习 |
+| `cs.CL` | 自然语言处理 |
+| `cs.CV` | 计算机视觉 |
+| `cs.SE` | 软件工程 |
+| `cs.DB` | 数据库 |
+| `stat.ML` | 统计机器学习 |
+
+</details>
+
+#### 4. 推送渠道
+
+Scholar Beacon 支持 **Discord** 和 **Telegram** 两种推送渠道。在每个 cron job 的 delivery 字段中配置：
+
+| 渠道 | `delivery.channel` | `delivery.to` |
+|------|-------------------|---------------|
+| Discord | `"discord"` | 频道 ID（右键频道 → 复制频道 ID） |
 | Telegram | `"telegram"` | Chat ID |
 
-For Discord, ensure the target channel is in the guild allowlist (`openclaw.json` → `channels.discord.guilds.<guild_id>.channels.<channel_id>.allow: true`).
+如果使用 Discord，需确保目标频道在 `openclaw.json` 的 guild allowlist 中（`channels.discord.guilds.<guild_id>.channels.<channel_id>.allow: true`）。
 
-#### 5. Cron Jobs
+#### 5. 定时任务
 
-See [`examples/cron-jobs.json`](examples/cron-jobs.json) for cron job templates. Replace `<CHANNEL>` and `<TARGET_ID>` with your push channel config, then add them to `~/.openclaw/cron/jobs.json` (requires stopping the Gateway first).
+参考 [`examples/cron-jobs.json`](examples/cron-jobs.json) 中的模板，将 `<CHANNEL>` 和 `<TARGET_ID>` 替换为你的推送渠道配置，然后添加到 `~/.openclaw/cron/jobs.json`（需先停止 Gateway）。
 
-### Agent Installation
+### Agent 一键安装
 
-For a fully automated setup, send the prompt in [`INSTALL-PROMPT.md`](INSTALL-PROMPT.md) to your OpenClaw agent.
+将 [`INSTALL-PROMPT.md`](INSTALL-PROMPT.md) 中的 prompt 发送给你的 OpenClaw Agent，即可自动完成安装部署。
 
-## Scripts
+## 脚本说明
 
-| Script | Purpose | I/O |
-|--------|---------|-----|
-| `collect-search.py` | Search OpenAlex + arXiv, filter seen IDs | keywords → stdout JSONL |
-| `collect-write.py` | Pipe JSONL → append data.md + seen-ids.md | stdin JSONL → files |
-| `zotero-write.py` | Write approved papers to Zotero (with dedup) | --ids → Zotero API |
-| `daily-push-prepare.py` | Select unpushed papers → pending | data.md → stdout summary |
-| `daily-push-verify.py` | Check delivery status → commit/discard | cron logs → files |
-| `cleanup-irrelevant.py` | Remove papers by ID from data + seen files | --ids → files |
+| 脚本 | 功能 | 输入/输出 |
+|------|------|----------|
+| `collect-search.py` | 搜索 OpenAlex + arXiv，过滤已见 ID | 关键词 → stdout JSONL |
+| `collect-write.py` | 管道接收 JSONL → 追加 data.md + seen-ids | stdin JSONL → 文件 |
+| `zotero-write.py` | 按 ID 将审批通过的论文写入 Zotero（自动去重） | --ids → Zotero API |
+| `daily-push-prepare.py` | 筛选未推送论文 → pending | data.md → stdout 摘要 |
+| `daily-push-verify.py` | 检查投递状态 → commit/discard | cron 日志 → 文件 |
+| `cleanup-irrelevant.py` | 按 ID 从 data.md 和 seen-ids 中移除论文 | --ids → 文件 |
 
-### Pipeline Usage
+### 管道用法
 
 ```bash
-# Search and collect
+# 搜索并采集
 uv run python3 collect-search.py \
   --keywords-file keywords.md \
   --seen-file seen-ids.md \
@@ -191,53 +232,53 @@ uv run python3 collect-search.py \
   --data-file data.md \
   --seen-file seen-ids.md
 
-# Approve papers to Zotero
+# 审批入库 Zotero
 uv run python3 zotero-write.py \
   --data-file data.md \
   --ids "arxiv:2401.12345" "openalex:W1234567890"
 
-# Clean irrelevant papers
+# 清理无关论文
 uv run python3 cleanup-irrelevant.py \
   --data-file data.md \
   --seen-file seen-ids.md \
   --ids "openalex:W9999999999"
 ```
 
-## Skills
+## Skills 一览
 
-Scholar Beacon includes 6 OpenClaw Skills for managing the workflow through natural language:
+Scholar Beacon 包含 6 个 OpenClaw Skill，支持通过自然语言管理整个工作流：
 
-| Skill | Description | Example |
-|-------|-------------|---------|
-| `literature-helper` | Core collection + push scripts | _(used by cron jobs)_ |
-| `literature-keywords` | Manage search keywords | "Add keyword: transformer architecture" |
-| `literature-scope` | Configure search disciplines | "Add computer vision to search scope" |
-| `literature-zotero` | Approve papers into Zotero | "Add papers 1, 3, 5 to Zotero" |
-| `literature-review` | AI relevance review + cleanup | "Review recent papers for relevance" |
-| `literature-cleanup` | Reset/clean data files | "Clean all literature data" |
+| Skill | 功能 | 示例指令 |
+|-------|------|----------|
+| `literature-helper` | 核心采集+推送脚本 | _（定时任务使用）_ |
+| `literature-keywords` | 管理搜索关键词 | "添加关键词：transformer architecture" |
+| `literature-scope` | 配置搜索学科范围 | "搜索范围加上计算机视觉" |
+| `literature-zotero` | 审批论文入库 Zotero | "把第 1、3、5 篇加入 Zotero" |
+| `literature-review` | AI 相关性审查+清理 | "审查一下最近的论文" |
+| `literature-cleanup` | 重置/清理数据文件 | "清理所有文献数据" |
 
-## Data Files
+## 数据文件
 
-All working data is stored in `~/.openclaw/workspace/literature/`:
+所有工作数据位于 `~/.openclaw/workspace/literature/`：
 
-| File | Purpose |
-|------|---------|
-| `keywords.md` | Search keywords (one per line) |
-| `scope.conf` | Search scope configuration |
-| `data.md` | Collected papers (Markdown table, by date) |
-| `seen-ids.md` | Already-collected paper IDs |
-| `seen-pushed-ids.md` | Already-pushed paper IDs |
-| `pending-push-ids.md` | Pending push confirmation (two-phase) |
-| `archive-YYYY-MM.md` | Monthly archives when data.md grows large |
+| 文件 | 说明 |
+|------|------|
+| `keywords.md` | 搜索关键词（每行一个） |
+| `scope.conf` | 搜索范围配置 |
+| `data.md` | 采集数据（Markdown 表格，按日期分节） |
+| `seen-ids.md` | 已采集论文 ID |
+| `seen-pushed-ids.md` | 已推送论文 ID |
+| `pending-push-ids.md` | 待确认推送 ID（两阶段中间态） |
+| `archive-YYYY-MM.md` | data.md 超限后的月度归档 |
 
-## Design Decisions
+## 设计决策
 
-- **Zotero writes require human approval** — Auto-collection fills your library with noise. Scholar Beacon collects broadly, but only writes to Zotero what you explicitly approve.
-- **Two-phase commit for push** — If the messaging channel fails, paper IDs aren't marked as "pushed", so they retry next time.
-- **OpenAlex over Semantic Scholar** — Free, no rate limits (with polite pool), 250M+ papers, better API design.
-- **File-based state** — Simple `.md` files instead of a database. Easy to inspect, edit, and version control.
-- **`lightContext: true`** — Cron jobs skip bootstrap context injection, reducing LLM token usage.
+- **Zotero 写入需人工审批** — 自动采集会给文献库引入噪音。Scholar Beacon 广泛采集，但只有用户明确审批的论文才写入 Zotero。
+- **两阶段提交推送** — 消息投递失败时，论文 ID 不会被标记为"已推送"，下次会重试。
+- **OpenAlex 替代 Semantic Scholar** — 免费、无速率限制（polite pool）、2.5 亿+ 论文、API 设计更好。
+- **文件状态管理** — 使用简单的 `.md` 文件而非数据库。便于查看、编辑和版本控制。
+- **`lightContext: true`** — 定时任务跳过 bootstrap 上下文注入，减少 LLM token 消耗。
 
-## License
+## 许可证
 
 MIT
